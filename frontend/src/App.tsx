@@ -1,22 +1,24 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+
 import './App.css'
-import { Sender} from './components/Sender'
-import { Receiver } from './components/Reciever'
+
+
 import { BrowserRouter , Routes,Route } from 'react-router-dom'
+
+import Landing from './components/Landing'
+import Room from './components/Room'
 function App() {
-  const handlestart=()=>{
-    
-  }
+ 
 
   return (
     <>
       <div>
+        
       <BrowserRouter>
       <Routes>
-        <Route path="/sender" element={<Sender />} />
-        <Route path="/receiver" element={<Receiver />} />
+       
+        <Route path='/' element={<Landing></Landing>}></Route>
+        
+        
       </Routes>
     </BrowserRouter>
 

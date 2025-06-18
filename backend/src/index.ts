@@ -1,37 +1,40 @@
-import { WebSocket, WebSocketServer } from 'ws';
+import { Socket } from "socket.io";
+import { UserManager } from "./UserManager";
 
-const wss = new WebSocketServer({ port: 8080 });
+const express = require('express');
+const { createServer } = require('node:http');
+const { join } = require('node:path');
+const { Server } = require('socket.io');
 
-let senderSocket: null | WebSocket = null;
-let receiverSocket: null | WebSocket = null;
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*'
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+const userManager=new UserManager()
+app.get('/', (req:Request, res:any) => {
+  res.send('/home route');
+  return
+});
 
-wss.on('connection', function connection(ws) {
-  ws.on('error', console.error);
-
-  ws.on('message', function message(data: any) {
-    const message = JSON.parse(data);
-    if (message.type === 'sender') {
-      senderSocket = ws;
-    } else if (message.type === 'receiver') {
-      receiverSocket = ws;
-    } else if (message.type === 'createOffer') {
-      if (ws !== senderSocket) {
-        return;
-      }
-      receiverSocket?.send(JSON.stringify({ type: 'createOffer', sdp: message.sdp }));
-    } else if (message.type === 'createAnswer') {
-        if (ws !== receiverSocket) {
-          return;
-        }
-        senderSocket?.send(JSON.stringify({ type: 'createAnswer', sdp: message.sdp }));
-    } else if (message.type === 'iceCandidate') {
-      if (ws === senderSocket) {
-        receiverSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
-      } else if (ws === receiverSocket) {
-        senderSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
-      }
-    }
-    ws.send('hello from server')
-  });
+io.on('connection', (socket: Socket) => {
+  console.log('New user connected with socket ID:', socket.id);
   
+  userManager.addUser('randamname' ,socket)
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+     userManager.removeUser(socket.id);
+  });
+
+
+});
+
+server.listen(3000, () => {
+  console.log('Server running at http://localhost:3000');
+  console.log('WebSocket server is ready for connections');
 });
