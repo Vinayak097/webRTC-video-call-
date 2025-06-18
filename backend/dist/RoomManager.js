@@ -60,10 +60,18 @@ class RoomManager {
             roomId,
             user1: { id: room.user1.socket.id, name: room.user1.name }
         });
-        room.user1.socket.emit('answer', {
+        room.user1.socket.emit('answer', { roomId,
             sdp
         });
         console.log('📤 Answer sent to user1:', room.user1.socket.id);
+    }
+    onIceCandidate(roomId, candidate) {
+        const room = this.rooms.get(roomId);
+        if (!room)
+            return;
+        // Forward to the other peer
+        room.user1.socket.emit('ice-candidate', { roomId, candidate });
+        room.user2.socket.emit('ice-candidate', { roomId, candidate });
     }
     removeRoom(roomId) {
         this.rooms.delete(roomId);

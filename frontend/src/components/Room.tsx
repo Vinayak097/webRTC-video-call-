@@ -24,8 +24,9 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
-    const [sendingpc, setSendingPc] = useState<RTCPeerConnection>();
-    const [recievingpc, setRecievingpc] = useState<RTCPeerConnection>();
+    const sendingPcRef = useRef<RTCPeerConnection | null>(null);
+const recievingPcRef = useRef<RTCPeerConnection | null>(null);
+
 
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
@@ -36,15 +37,16 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' }
         ]
-    };    useEffect(() => {        
+    };   
+     useEffect(() => {        
         // Setup local video
-        if(localVideoRef.current && localvideoStream){
-            const localStream = new MediaStream([localvideoStream]);
-            if(localaudioStream) {
-                localStream.addTrack(localaudioStream);
-            }
-            localVideoRef.current.srcObject = localStream;
-        }
+        if (localVideoRef.current && localvideoStream) {
+    const localStream = new MediaStream([localvideoStream]);
+    if (localaudioStream) {
+        localStream.addTrack(localaudioStream);
+    }
+    localVideoRef.current.srcObject = localStream; // ✅ Corrected
+}
 
         // Initialize socket connection with better config
         const socket = io(url, {
@@ -70,41 +72,61 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
             console.log('Entered lobby state');
             setLobby(true);
         });
-
-        socket.on('send-offer', async ({ roomId }) => {
-    
-    const pc = new RTCPeerConnection(configuration);
-    
-    pc.onconnectionstatechange = () => {
-        console.log('Connection state:', pc.connectionState);
-        
-    };
-    
-    setSendingPc(pc);
-
-    // Add tracks before creating offer
-    if (!localvideoStream || !localaudioStream) {
-        console.error('No local streams available');
-        return;
-    }
-    
-    const localStream = new MediaStream([localvideoStream, localaudioStream]);
-    localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream);
-    });
-
-    // Add ICE candidate handler
-    pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            console.log('Sending ICE candidate');
-            socket.emit('ice-candidate', {
-                roomId,
-                candidate: event.candidate
-            });
-        }
-    };
+        socket.on('ice-candidate', async ({ candidate }) => {
+    console.log('Received ICE candidate from server:', candidate);
+    const iceCandidate = new RTCIceCandidate(candidate);
 
     try {
+        if (recievingPcRef.current && recievingPcRef.current.remoteDescription) {
+            await recievingPcRef.current.addIceCandidate(iceCandidate);
+            console.log('ICE candidate added to receiving peer');
+        } else if (sendingPcRef.current && sendingPcRef.current.remoteDescription) {
+            await sendingPcRef.current.addIceCandidate(iceCandidate);
+            console.log('ICE candidate added to sending peer');
+        } else {
+            setPendingCandidates(prev => [...prev, iceCandidate]);
+            console.log('Stored pending ICE candidate');
+        }
+    } catch (err) {
+        console.error('Failed to add ICE candidate:', err);
+    }
+});
+        socket.on('send-offer', async ({ roomId }) => {
+            
+            const pc = new RTCPeerConnection(configuration);
+            
+            pc.onicecandidate = (event) => {
+    if (event.candidate) {
+        socket.emit('ice-candidate', {
+            roomId,
+            candidate: event.candidate
+        });
+    }
+};
+            console.log('setling sending pc ' , pc)
+            sendingPcRef.current=pc;
+            
+    try {
+        const localStream = new MediaStream();
+if (localvideoStream) localStream.addTrack(localvideoStream);
+if (localaudioStream) localStream.addTrack(localaudioStream);
+
+localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+});
+
+
+pc.ontrack = (event) => {
+    const remoteMediaStream = new MediaStream();
+    event.streams[0].getTracks().forEach(track => {
+        remoteMediaStream.addTrack(track);
+    });
+    setRemoteStream(remoteMediaStream);
+    if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteMediaStream;
+    }
+};
+
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         
@@ -113,48 +135,52 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
             roomId,
             sdp: pc.localDescription
         });
+        
     } catch (error) {
         console.error('Error creating offer:', error);
     }
+    }); //send offer close
+
+
+    socket.on('offer', async ({ roomId, sdp }) => {
+        
+        setLobby(false);
+        console.log('Received offer:', sdp , roomId);
+    
+        
+
+        const pc = new RTCPeerConnection();
+        const localStream = new MediaStream();
+if (localvideoStream) localStream.addTrack(localvideoStream);
+if (localaudioStream) localStream.addTrack(localaudioStream);
+
+localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
 });
 
-
-       socket.on('offer', async ({ roomId, sdp }) => {
-    setLobby(false);
-    console.log('Received offer:', sdp);
-    
-    if(!localaudioStream || !localvideoStream){
-        console.log('No local streams available');
-        return;
-    }
-
-    const pc = new RTCPeerConnection();
-      // Create new MediaStream for remote video
-    const stream = new MediaStream();
-    if(remoteVideoRef.current){
-        remoteVideoRef.current.srcObject = stream;
-    }
-    setRemoteStream(stream);
-    
-    // Add local tracks
-    const localStream = new MediaStream([localvideoStream, localaudioStream]);
-    localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream);
+        pc.ontrack = (event) => {
+    const remoteMediaStream = new MediaStream();
+    event.streams[0].getTracks().forEach(track => {
+        remoteMediaStream.addTrack(track);
     });
+    setRemoteStream(remoteMediaStream);
+    if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteMediaStream;
+    }
+};
 
-    // Handle incoming tracks
-    pc.ontrack = (event) => {
-        console.log('Received track:', event.track.kind);
-        const [remoteStream] = event.streams;
-        if(remoteVideoRef.current){
-            remoteVideoRef.current.srcObject = remoteStream;
-        }
-    };
-
-    try {
+        pc.onicecandidate = (event) => {
+    if (event.candidate) {
+        socket.emit('ice-candidate', {
+            roomId,
+            candidate: event.candidate
+        });
+    }
+};
+        try {
         // Set remote description first
-        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-        
+            await pc.setRemoteDescription(sdp);
+        recievingPcRef.current=pc;
         // Then create answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -165,23 +191,24 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
             sdp: pc.localDescription
         });
         
-        setRecievingpc(pc);
+        
     } catch (error) {
         console.error('Error in offer handling:', error);
     }
-});       socket.on('answer', async ({ sdp }) => {
-    console.log('Received answer:', sdp);
+});       
+socket.on('answer', async ({ roomId, sdp }) => {
+    console.log('Received answer:',roomId,   sdp);
     try {
-        if (sendingpc) {
-            await sendingpc.setRemoteDescription(new RTCSessionDescription(sdp));
+        if(!sendingPcRef.current){
+            console.log("sendig pc not found")
+            return;
+
+        }
+            await sendingPcRef.current.setRemoteDescription(sdp);
             console.log('Set remote description from answer');
             // Process any pending ICE candidates
-            for (const candidate of pendingCandidates) {
-                await sendingpc.addIceCandidate(candidate);
-                console.log('Added pending ICE candidate');
-            }
-            setPendingCandidates([]);
-        }
+          
+       
     } catch (error) {
         console.error('Error handling answer:', error);
         setError('Failed to establish peer connection');
@@ -191,31 +218,18 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
 
        
 
-        socket.on('ice-candidate', async ({ candidate }) => {
-    const iceCandidate = new RTCIceCandidate(candidate);
-    try {
-        if (recievingpc?.remoteDescription) {
-            await recievingpc.addIceCandidate(iceCandidate);
-            console.log('Added ICE candidate');
-        } else {
-            setPendingCandidates(prev => [...prev, iceCandidate]);
-            console.log('Stored pending ICE candidate');
-        }
-    } catch (err) {
-        console.error('Error adding ICE candidate:', err);
-    }
-});
+        
 
         setSocket(socket);        // Cleanup
         return () => {
             socket.close();
             
             // Cleanup peer connections
-            if (sendingpc) {
-                sendingpc.close();
+            if (sendingPcRef.current) {
+                sendingPcRef.current.close();
             }
-            if (recievingpc) {
-                recievingpc.close();
+            if (recievingPcRef.current) {
+                recievingPcRef.current.close();
             }
             
             // Cleanup streams
@@ -223,7 +237,7 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
                 remoteStream.getTracks().forEach(track => track.stop());
             }
         };
-    }, [name, ]);
+    }, [name ]);
 
     const toggleMute = () => {
         if (localaudioStream) {
@@ -243,12 +257,12 @@ const Room: React.FC<RoomProps> = ({name, localaudioStream, localvideoStream}) =
         if (socket) {
             socket.disconnect();
         }
-        if (sendingpc) {
-            sendingpc.close();
-        }
-        if (recievingpc) {
-            recievingpc.close();
-        }
+           if (sendingPcRef.current) {
+                sendingPcRef.current.close();
+            }
+            if (recievingPcRef.current) {
+                recievingPcRef.current.close();
+            }
         // Redirect to home
         window.location.href = '/';
     };

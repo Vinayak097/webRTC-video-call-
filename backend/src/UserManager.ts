@@ -62,6 +62,11 @@ export class UserManager{
             console.log('answer recieved :', roomId)
             this.roomManager.onAnswer(roomId,sdp)
         })
+        socket.on('ice-candidate', ({ roomId, candidate }) => {
+            console.log('ice-candidate listened')
+            this.roomManager.onIceCandidate(roomId,candidate)
+            
+        }); 
         
     }
 }
