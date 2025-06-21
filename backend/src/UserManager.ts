@@ -18,12 +18,22 @@ export class UserManager{
     addUser(name:string,socket:Socket){
         console.log(`Adding user ${name} with socket ID ${socket.id}`);
         this.users.push({name,socket})
-        this.queue.push(socket.id)
+        this.queue.push(socket.id) 
         console.log('Current queue:', this.queue);
         socket.emit('lobby')
         this.clearQueue()
         this.initHandler(socket)
-    }     
+    }   
+    updateUserName(name:string,socketId:string)  {
+        const user=this.users.find(u=>u.socket.id===socketId);
+        if(!user){
+            console.log(`User with socket ID not found`);
+            return;
+        }
+        user.name=name;
+        console.log(`Updated user name to ${name} for socket ID `);
+
+    }
     removeUser(socketId:string){
         console.log(`Removing user with socket ID ${socketId}`);
         this.users = this.users.filter(s => socketId !== s.socket.id);

@@ -84,7 +84,7 @@ console.log("landing")
     );
 }else{
     console.log("room")
-    return <Room name={name} localaudioStream={localaudioStream} localvideoStream={localvideoStream}></Room>
+    return <Room name={name} ></Room>
 }
 }
 

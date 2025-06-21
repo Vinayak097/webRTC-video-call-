@@ -26,6 +26,10 @@ class RoomManager {
         });
         // Emit the send-offer event
         console.log('📡 Emitting send-offer event for room:', roomId);
+        console.log(user1.name);
+        console.log("user 1 socket id me ", user1.name);
+        user1.socket.emit("me", "1");
+        user2.socket.emit("me", "2");
         user1.socket.emit("send-offer", { roomId });
         return roomId; // Return roomId for tracking
     }

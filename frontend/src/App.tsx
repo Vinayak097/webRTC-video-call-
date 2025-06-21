@@ -10,8 +10,8 @@ function App() {
  
 
   return (
-    <>
-      <div>
+   
+  
         
       <BrowserRouter>
       <Routes>
@@ -22,9 +22,8 @@ function App() {
       </Routes>
     </BrowserRouter>
 
-        
-      </div>
-    </>
+       
+  
   )
 }
 

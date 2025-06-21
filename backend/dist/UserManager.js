@@ -17,6 +17,15 @@ class UserManager {
         this.clearQueue();
         this.initHandler(socket);
     }
+    updateUserName(name, socketId) {
+        const user = this.users.find(u => u.socket.id === socketId);
+        if (!user) {
+            console.log(`User with socket ID not found`);
+            return;
+        }
+        user.name = name;
+        console.log(`Updated user name to ${name} for socket ID `);
+    }
     removeUser(socketId) {
         console.log(`Removing user with socket ID ${socketId}`);
         this.users = this.users.filter(s => socketId !== s.socket.id);

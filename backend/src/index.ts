@@ -23,15 +23,16 @@ app.get('/', (req:Request, res:any) => {
 
 io.on('connection', (socket: Socket) => {
   console.log('New user connected with socket ID:', socket.id);
-  
+  socket.on('username', (name: string) => {
+    console.log(`Received username: ${name} from socket ID: ${socket.id}`);
+    userManager.updateUserName(name, socket.id);
+  })
   userManager.addUser('randamname' ,socket)
   
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
      userManager.removeUser(socket.id);
   });
-
-
 });
 
 server.listen(3000, () => {
