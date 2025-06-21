@@ -6,42 +6,32 @@ const Sender = ({socket,roomId}:{socket:Socket, roomId:number}) => {
   const remoteRef=useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   useEffect(()=>{
-    
-    console.log("Sender component mounted");
-     const start = async () => {
-      const pc = new RTCPeerConnection();
+    const pc = new RTCPeerConnection();
       pcRef.current=pc;
-
+      console.log('Received send-offer from server');
+    console.log("Sender component mounted");
      
-        console.log('Received send-offer from server');
+    navigator.mediaDevices.getUserMedia({video:true,audio:true})
+    .then(async(stream)=>{
+      if(VideoRef.current){
+        console.log("stream recieved ")
+        VideoRef.current.srcObject = stream;
+        VideoRef.current.play();
+      }
+      pc.addTrack(stream.getVideoTracks()[0], stream);
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit('offer', {sdp:offer,roomId:roomId});
       
         pc.onicecandidate=(event) => {
           if (event.candidate) {
-            console.log('New ICE candidate:', event.candidate);
-           
+            console.log('New ICE candidate from sender:', event.candidate);
+            socket.emit('ice-candidate', {
+              candidate: event.candidate,
+              roomId: roomId
+            });
           }
         }
-
-      // socket?.on('answer',async(data)=>{
-      //   console.log('Received answer from server');
-      //   if(pc){
-      //     await pc.setRemoteDescription(data.sdp);
-      //   } else {
-      //     console.error("PeerConnection is not initialized");
-      //   }
-      // })
-
-      
-    };
-    navigator.mediaDevices.getUserMedia({video:true,audio:true})
-    .then(stream=>{
-      if(VideoRef.current){
-        VideoRef.current.srcObject = stream;
-        VideoRef.current.play();
-      }
     })
     .catch(err=>{
       console.error("Error accessing media devices.", err);
@@ -55,14 +45,23 @@ const Sender = ({socket,roomId}:{socket:Socket, roomId:number}) => {
             console.error("PeerConnection is not initialized");
             return;
           }
-          pcRef.current.setRemoteDescription(data.sdp);
+          await pcRef.current.setRemoteDescription(data.sdp);
           console.log('Received answer from server');
         })
     
     socket.on("disconnect", () => {
-      console.log("Disconnected from server");
+    console.log("Disconnected from server");
     });
-    start();
+    socket.on('ice-candidate',async(data)=>{
+      if(!pcRef.current){
+        console.error("PeerConnection is not initialized");
+        return;
+      }
+      const candidate = new RTCIceCandidate(data.candidate);
+      await pcRef.current.addIceCandidate(candidate);
+      console.log('Received ICE candidate from server Sender here');
+    })
+    
   return () => {
       socket?.off('send-offer');
       socket?.off('disconnect');

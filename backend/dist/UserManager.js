@@ -62,7 +62,7 @@ class UserManager {
         });
         socket.on('ice-candidate', ({ roomId, candidate }) => {
             console.log('ice-candidate listened');
-            this.roomManager.onIceCandidate(roomId, candidate);
+            this.roomManager.onIceCandidate(roomId, candidate, socket.id);
         });
     }
 }
