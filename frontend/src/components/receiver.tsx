@@ -5,9 +5,17 @@ const Receiver = ({socket,roomId}:{socket:Socket,roomId?:number}) => {
     const VideoRef=useRef<HTMLVideoElement>(null);
     const remoteRef=useRef<HTMLVideoElement>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
-
+    
     useEffect(() => {
       const pc = new RTCPeerConnection();
+      pc.ontrack = (event) => {
+          console.log('Received remote track');
+          if (remoteRef.current) {
+            remoteRef.current.srcObject = event.streams[0];
+            remoteRef.current.play();
+          }
+        }
+      // pcRef.current=pc;
         navigator.mediaDevices.getUserMedia({video:true,audio:true})
     .then(stream=>{
       if(VideoRef.current){
@@ -54,9 +62,10 @@ const Receiver = ({socket,roomId}:{socket:Socket,roomId?:number}) => {
           }
           const candidate= new RTCIceCandidate(data.candidate);
           await pcRef.current.addIceCandidate(candidate);
+           
           console.log('Received ICE candidate from server Receiver here');
         })
-
+        
         
 
       

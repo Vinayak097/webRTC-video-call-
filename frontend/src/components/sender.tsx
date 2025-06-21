@@ -7,6 +7,13 @@ const Sender = ({socket,roomId}:{socket:Socket, roomId:number}) => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   useEffect(()=>{
     const pc = new RTCPeerConnection();
+    pc.ontrack = (event) => {
+          console.log('Received remote track');
+          if (remoteRef.current) {
+            remoteRef.current.srcObject = event.streams[0];
+            remoteRef.current.play();
+          }
+        }
       pcRef.current=pc;
       console.log('Received send-offer from server');
     console.log("Sender component mounted");
@@ -45,7 +52,7 @@ const Sender = ({socket,roomId}:{socket:Socket, roomId:number}) => {
             console.error("PeerConnection is not initialized");
             return;
           }
-          await pcRef.current.setRemoteDescription(data.sdp);
+          await pc.setRemoteDescription(data.sdp);
           console.log('Received answer from server');
         })
     
@@ -60,6 +67,7 @@ const Sender = ({socket,roomId}:{socket:Socket, roomId:number}) => {
       const candidate = new RTCIceCandidate(data.candidate);
       await pcRef.current.addIceCandidate(candidate);
       console.log('Received ICE candidate from server Sender here');
+       
     })
     
   return () => {
