@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+
 import Room from './Room';
+import { TvMinimal } from 'lucide-react';
 
 const Landing = () => {
     const [name, setName] = useState("");
@@ -61,25 +63,44 @@ const Landing = () => {
     
 console.log("landing")
     return (
-        <div className="landing-container">
-            <h2>Join Video Chat</h2>
+        
+        <div className="landing-container  h-screen bg-slate-400 from-yellow-200 to-amber-800">
+            <div className='container mx-auto flex flex-col items-center justify-center'>
+                <nav className='mx-64 myy-5'>
+                <div className='flex gap-2 items-center'>
+                    <TvMinimal className='h-18 ' />
+                    <h1>VibeLink</h1>
+                </div>
+            </nav>
+            
             {error && <div className="error-message">{error}</div>}
-            <div className="video-preview">
-                <video  autoPlay ref={videoRef} muted playsInline />
-            </div>
-            <div className="join-controls">
-                <input 
+            <div className='flex flex-row gap-4 items-center justify'>       
+
+                <div className="video-preview">
+                    
+                    <video  autoPlay ref={videoRef} muted playsInline />
+                </div>
+                <div className=" flex flex-col gap-8">
+                    <input 
                     type="text" 
-                    placeholder="Enter your name"
+                    placeholder="Enter your name "
                     value={name}
+                    className='p-2 border-none decoration-none hover:decoration-none border border-b shadow-md'
                     onChange={(e) => setName(e.target.value)}
                 />
-                <button 
+                    <button className='border-b cursor-pointer shadow-lg text-blue-500 hover:text-blue-900 ' 
                     onClick={handleJoin}
                     disabled={!localStream || !name.trim()}>
                     Join
-                </button>
+                    </button>
+                </div>
+                
+
             </div>
+            
+
+            </div>
+            
         </div>
     );
 }else{

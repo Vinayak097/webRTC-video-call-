@@ -44,12 +44,11 @@ const Room = ({name}:{name:string}) => {
   if(number==1 && socket && sendoffer.sendOffer){
     console.log("socket usernmae emitted  " , number)
      return (
-    <div>
+
       
       <Sender roomId={sendoffer.roomId} socket={socket}></Sender>
       
-        
-    </div>
+ 
   )
   }
   if(number==2 && socket){

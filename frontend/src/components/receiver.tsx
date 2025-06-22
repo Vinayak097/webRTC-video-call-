@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
+import VideoScreening from './VideoScreening';
 
 const Receiver = ({socket,roomId}:{socket:Socket,roomId?:number}) => {
     const VideoRef=useRef<HTMLVideoElement>(null);
@@ -72,10 +73,7 @@ const Receiver = ({socket,roomId}:{socket:Socket,roomId?:number}) => {
     }, [socket])
     
   return (
-    <div>
-        <video className='receiver' ref={VideoRef} autoPlay ></video>
-        <video ref={remoteRef} autoPlay></video>
-    </div>
+     <VideoScreening videoRef={VideoRef} remoteRef={remoteRef}></VideoScreening>
   )
 }
 
