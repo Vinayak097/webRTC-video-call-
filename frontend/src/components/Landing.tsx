@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import  { useState, useRef, useEffect } from 'react';
+
+
 
 import Room from './Room';
 import { TvMinimal } from 'lucide-react';
@@ -11,18 +11,15 @@ const Landing = () => {
     const [error, setError] = useState<string>("");
     const videoRef = useRef<HTMLVideoElement>(null);
     const [joined,setjoined]=useState(false)
-    const [localaudioStream,setAudioStream]=useState<MediaStreamTrack|null>(null);
-    const [localvideoStream,setlocalVideoStream]=useState<MediaStreamTrack|null>(null);
+
     
-    const navigate = useNavigate();
+   
 
     const getCam=async()=>{
         const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true})
 
-        const  audioTrack=stream.getAudioTracks()[0];
         const videoTrack= stream.getVideoTracks()[0];
-        setAudioStream(audioTrack)
-        setlocalVideoStream(videoTrack)
+        
         setLocalStream(stream)
         console.log(localStream)
         if(videoRef.current){

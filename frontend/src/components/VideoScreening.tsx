@@ -1,4 +1,4 @@
-import React from 'react'
+
 
 const VideoScreening = ({videoRef,remoteRef}:{videoRef:any,remoteRef:any}) => {
   return (

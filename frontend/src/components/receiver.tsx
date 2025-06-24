@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { io, Socket } from 'socket.io-client'
+import  { useEffect, useRef,  } from 'react'
+import {  Socket } from 'socket.io-client'
 import VideoScreening from './VideoScreening';
 
 const Receiver = ({socket,roomId}:{socket:Socket,roomId?:number}) => {

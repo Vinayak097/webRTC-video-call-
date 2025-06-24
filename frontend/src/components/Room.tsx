@@ -1,14 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import  { useEffect, useState } from 'react'
 import { io, Socket } from 'socket.io-client';
 import Sender from './sender';
 import Receiver from './receiver';
 import '../App.css'
-import { Navigate, useNavigate } from 'react-router-dom';
-interface roomProps{
-  localaudioStream: MediaStreamTrack | null;
-  localvideoStream: MediaStreamTrack | null;
 
-}
+
 const Room = ({name}:{name:string}) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [number,setNumber]=useState<number>(0);
