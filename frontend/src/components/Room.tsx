@@ -4,6 +4,7 @@ import Sender from './sender';
 import Receiver from './receiver';
 import '../App.css'
 
+const url_backend="https://webrtc-video-call-yp7c.onrender.com"
 
 const Room = ({name}:{name:string}) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -12,7 +13,7 @@ const Room = ({name}:{name:string}) => {
   const [roomId,setroomId]=useState<number>(0);
   
   useEffect(() => {
-    const socket = io('http://localhost:3000'); // Connect to the server
+    const socket = io(url_backend); // Connect to the server
     setSocket(socket); // Set the socket state
 
     socket.on('connect', () => {
